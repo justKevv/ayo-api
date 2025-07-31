@@ -80,16 +80,40 @@ func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
 }
 
 func DeleteTeam(db *gorm.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var team models.Team
-		if err := db.First(&team, ctx.Param("id")).Error; err != nil {
-			utils.RespondWithError(ctx, http.StatusNotFound, "Team not found")
-			return
-		}
-		if err := db.Delete(&team).Error; err != nil {
-			utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to delete team")
-			return
-		}
-		utils.RespondWithSuccess(ctx, http.StatusOK, "Team deleted successfully", team)
-	}
+    return func(ctx *gin.Context) {
+        var team models.Team
+        if err := db.First(&team, ctx.Param("id")).Error; err != nil {
+            utils.RespondWithError(ctx, http.StatusNotFound, "Team not found")
+            return
+        }
+
+        // Check for related data that would prevent deletion
+        var playerCount, matchCount, goalCount int64
+
+        // Check players
+        db.Model(&models.Player{}).Where("team_id = ?", team.ID).Count(&playerCount)
+
+        // Check matches (both as team1 and team2)
+        db.Model(&models.Match{}).Where("team1_id = ? OR team2_id = ?", team.ID, team.ID).Count(&matchCount)
+
+        // Check goals
+        db.Model(&models.Goal{}).Where("team_id = ?", team.ID).Count(&goalCount)
+
+        if playerCount > 0 || matchCount > 0 || goalCount > 0 {
+            utils.RespondWithError(ctx, http.StatusBadRequest,
+                "Cannot delete team with existing players, matches, or goals. Please remove related data first.")
+            return
+        }
+
+        // Soft delete the team (GORM automatically uses soft delete with gorm.Model)
+        if err := db.Delete(&team).Error; err != nil {
+            utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to delete team")
+            return
+        }
+
+        utils.RespondWithSuccess(ctx, http.StatusOK, "Team deleted successfully", gin.H{
+            "deleted_team_id": team.ID,
+            "deleted_team_name": team.Name,
+        })
+    }
 }

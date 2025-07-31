@@ -13,3 +13,12 @@ type Player struct {
 	Team *Team `gorm:"foreignKey:TeamID" json:"team,omitempty"`
 	Goals []Goal `gorm:"foreignKey:PlayerID" json:"goals,omitempty"`
 }
+
+func (p *Player) BeforeCreate(tx *gorm.DB) error {
+    var count int64
+    tx.Model(&Player{}).Where("team_id = ? AND jersey_number = ?", p.TeamID, p.JerseyNumber).Count(&count)
+    if count > 0 {
+        return gorm.ErrDuplicatedKey
+    }
+    return nil
+}

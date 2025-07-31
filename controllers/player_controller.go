@@ -95,13 +95,32 @@ func UpdatePlayer(db *gorm.DB) gin.HandlerFunc {
 }
 
 func DeletePlayer(db *gorm.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var player models.Player
-		if err := db.Delete(&player, ctx.Param("id")).Error; err != nil {
-			utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to delete player")
-			return
-		}
+    return func(ctx *gin.Context) {
+        var player models.Player
+        if err := db.First(&player, ctx.Param("id")).Error; err != nil {
+            utils.RespondWithError(ctx, http.StatusNotFound, "Player not found")
+            return
+        }
 
-		utils.RespondWithSuccess(ctx, http.StatusOK, "Player deleted successfully", nil)
-	}
+        // Check for goals scored by this player
+        var goalCount int64
+        db.Model(&models.Goal{}).Where("player_id = ?", player.ID).Count(&goalCount)
+
+        if goalCount > 0 {
+            utils.RespondWithError(ctx, http.StatusBadRequest,
+                "Cannot delete player with existing goal records. Please remove goal records first.")
+            return
+        }
+
+        // Soft delete the player (GORM automatically uses soft delete with gorm.Model)
+        if err := db.Delete(&player).Error; err != nil {
+            utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to delete player")
+            return
+        }
+
+        utils.RespondWithSuccess(ctx, http.StatusOK, "Player deleted successfully", gin.H{
+            "deleted_player_id": player.ID,
+            "deleted_player_name": player.Name,
+        })
+    }
 }
