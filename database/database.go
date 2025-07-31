@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitializeDB() (*gorm.DB, error) {
+func InitializeDB() *gorm.DB {
 	dbUser := config.LoadConfig().Database.User
 	dbPassword := config.LoadConfig().Database.Password
 	dbHost := config.LoadConfig().Database.Host
@@ -22,14 +22,14 @@ func InitializeDB() (*gorm.DB, error) {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		panic("failed to connect to database")
 	}
 
-	return db, nil
+	return db
 }
 
-func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+func AutoMigrate(db *gorm.DB) {
+	db.AutoMigrate(
 		&models.Team{},
 		&models.Player{},
 		&models.Match{},

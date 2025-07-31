@@ -4,10 +4,9 @@ import "gorm.io/gorm"
 
 type Goal struct {
 	gorm.Model
-	ID uint `gorm:"primaryKey"`
-	MatchID uint `gorm:"not null"`
-	PlayerID uint `gorm:"not null"`
-	Minute int `gorm:"not null"`
-	Match Match `gorm:"foreignKey:MatchID"`
-	Player Player `gorm:"foreignKey:PlayerID"`
+	MatchID uint `gorm:"not null" json:"match_id"`
+	PlayerID uint `gorm:"not null" json:"player_id"`
+	Minute int `gorm:"not null" json:"minute"`
+	Match Match `gorm:"foreignKey:MatchID" json:"match,omitempty"`
+	Player Player `gorm:"foreignKey:PlayerID" json:"player,omitempty"`
 }

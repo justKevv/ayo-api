@@ -4,11 +4,10 @@ import "gorm.io/gorm"
 
 type Team struct {
 	gorm.Model
-	ID uint `gorm:"primaryKey"`
-	Name string `gorm:"not null;unique"`
-	Logo string `gorm:"not null"`
-	YearEstablished int `gorm:"not null"`
-	Address string `gorm:"not null"`
-	City string `gorm:"not null"`
-	Players []Player `gorm:"foreignKey:TeamID"`
+	Name string `gorm:"not null;unique" json:"name"`
+	Logo string `gorm:"not null" json:"logo"`
+	YearEstablished int `gorm:"not null" json:"year_established"`
+	Address string `gorm:"not null" json:"address"`
+	City string `gorm:"not null" json:"city"`
+	Players []Player `gorm:"foreignKey:TeamID" json:"players,omitempty"`
 }
