@@ -62,14 +62,19 @@ func UpdateTeam(db *gorm.DB) gin.HandlerFunc {
 			utils.RespondWithError(ctx, http.StatusNotFound, "Team not found")
 			return
 		}
-		if err := ctx.ShouldBindJSON(&team); err != nil {
+		var updateData map[string]interface{}
+		if err := ctx.ShouldBindJSON(&updateData); err != nil {
 			utils.RespondWithError(ctx, http.StatusBadRequest, "Invalid request body")
 			return
 		}
-		if err := db.Save(&team).Error; err != nil {
+		if err := db.Model(&team).Updates(updateData).Error; err != nil {
 			utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to update team")
 			return
 		}
+		if err := db.First(&team, team.ID).Error; err != nil {
+            utils.RespondWithError(ctx, http.StatusInternalServerError, "Failed to fetch updated team")
+            return
+        }
 		utils.RespondWithSuccess(ctx, http.StatusOK, "Team updated successfully", team)
 	}
 }
